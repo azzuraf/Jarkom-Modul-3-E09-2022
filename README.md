@@ -340,7 +340,8 @@ visible_hostname Berlint
 service squid restart
 service squid status
 ```
-- Jalankan proxy pada client server dalam hal ini adalah `SSS`  dengan command berkut:
+- Jalankan proxy pada client server dalam hal ini adalah `SSS`
+jika sudah berjalan akan ditampilkan proxy yang sedang berjalan sebagai berikut
 ```bash
 echo "nameserver 10.26.3.13" >> /etc/resolv.conf.d
 
@@ -355,77 +356,81 @@ apt-get install lynx -y
 export http_proxy="http://10.26.2.69:8080"
 export https_proxy="http://10.26.2.69:8080"
 ```
-- Periksa apakah proxy sudah berjalan di client server dengan command berikut  
-`` env | grep -i proxy``  
-jika sudah berjalan akan ditampilkan proxy yang sedang berjalan sebagai berikut
-``
-http_proxy=http://192.177.2.3:8080
-https_proxy=http://192.177.2.3:8080
-``
 
 ####  1. Client hanya dapat mengakses internet diluar (selain) hari & jam kerja (senin-jumat 08.00 - 17.00) dan hari libur (dapat mengakses 24 jam penuh)
 - Tambahkan konfigurasi berikut pada proxy server yaitu `berlint` pada file `/etc/squid/squid.conf`
 ```bash 
+echo "
 http_port 8080
-visible_hostname berlint
-
-#membuat acl untuk sebagai veriable untuk jam kerja senin-jumat (MTWHF) jam 08:00-17:00
-acl AVAILABLE_WORKING time MTWHF 08:00-17:00
-
-# melarang akses internet pada jam kerja
-http_a ccess deny AVAILABLE_WORKING
+visible_hostname Berlint
+acl available_hour1 time MTWHF 08:00-17:00
+acl available_hour2 time AS 00:00-23:59
+acl loid-work dstdomain loid-work.com
+acl franky-work dstdomain franky-work.com
+http_access allow loid-work available_hour1
+http_access allow franky-work available_hour1
+" > /etc/squid/squid.conf
+service squid restart
 ```
 #### 2. Adapun pada hari dan jam kerja sesuai nomor (1), client hanya dapat mengakses domain loid-work.com dan franky-work.com (IP tujuan domain dibebaskan) 
 - Buat domain loid-work.xom dan francky-work.com terlebih dahulu pada `wise` sebagai DNS server, dengan konfigurasi dalam script file sebagai berikut (pastikan bind9 telah terinstall):
 ``` bash
-echo '
-zone "loid-work.com" {
-        type master;
-        file "/etc/bind/jarkom/loid-work.com";
-}; 
-
-zone "franky-work.com" {
-        type master;
-        file "/etc/bind/jarkom/franky-work.com";
+echo "
+zone \"loid-work.com\" {
+	type master;
+	file \"/etc/bind/wise/loid-work.com\";
 };
+" > /etc/bind/named.conf.local
 
-' > /etc/bind/named.conf.local
+rndc reload
 
-mkdir -p /etc/bind/jarkom
-
-echo '
+#Set domain name
+echo ";
 ; BIND data file for local loopback interface
 ;
-$TTL    604800
-@       IN      SOA     franky-work.com. root.franky-work.com. (
-                              2         ; Serial
-                         604800         ; Refresh
-                          86400         ; Retry
-                        2419200         ; Expire
-                         604800 )       ; Negative Cache TTL
-;
-@       IN      NS      franky-work.com.
-@       IN      A       192.177.2.3     ;IP Berlint 192.177.2.3
-
-' > /etc/bind/jarkom/franky-work.com
-
-echo '
-; BIND data file for local loopback interface
-;
-$TTL    604800
-@       IN      SOA     loid-work.com. root.loid-work.com. (
-                              2         ; Serial
-                         604800         ; Refresh
-                          86400         ; Retry
-                        2419200         ; Expire
-                         604800 )       ; Negative Cache TTL
+\$TTL    604800
+@       IN      SOA    loid-work.com. root.loid-work.com. (
+                             2           ; Serial
+                        604800           ; Refresh
+                         86400           ; Retry
+                       2419200           ; Expire
+                        604800 )         ; Negative Cache TTL
 ;
 @       IN      NS      loid-work.com.
-@       IN      A       192.177.2.3     ;IP Berlint 192.177.2.3
+@       IN      A       10.26.2.2 ; IP WISE
+www     IN      CNAME   loid-work.com.
+@       IN      AAAA    ::1
+" > /etc/bind/wise/loid-work.com
 
-' > /etc/bind/jarkom/loid-work.com
+echo "
+zone \"franky-work.com\" {
+	type master;
+	file \"/etc/bind/wise/franky-work.com\";
+};
+" >> /etc/bind/named.conf.local
+
+rndc reload
+
+#Set domain name
+echo ";
+; BIND data file for local loopback interface
+;
+\$TTL    604800
+@       IN      SOA    franky-work.com. root.franky-work.com. (
+                             2           ; Serial
+                        604800           ; Refresh
+                         86400           ; Retry
+                       2419200           ; Expire
+                        604800 )         ; Negative Cache TTL
+;
+@       IN      NS      franky-work.com.
+@       IN      A       10.26.3.13 ; IP Eden
+www     IN      CNAME   franky-work.com.
+@       IN      AAAA    ::1
+" > /etc/bind/wise/franky-work.com
 
 service bind9 restart
+service bind9 status
 ```
 - setelah domain terbuat, tambahkan domain loid dan franky-work sebagai acl dnsdomain yanga akan kita allow pada jam kerja dan deny diluar jam kerja. dengan konfigurasi pada `/etc/squid/squid.conf` di `berlint` sehingga konfigurasi menjadi sebagai berkut:
 ```bash
