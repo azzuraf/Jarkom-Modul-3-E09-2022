@@ -342,9 +342,18 @@ service squid status
 ```
 - Jalankan proxy pada client server dalam hal ini adalah `SSS`  dengan command berkut:
 ```bash
-# Menjalankan proxy pada http dan https (192.177.2.3 adalah ip berlint sebagai proxy server, 8000 adalah port yang digunakan)
-export http_proxy="http://192.177.2.3:8080"
-export https_proxy="https://192.177.2.3:8080"
+echo "nameserver 10.26.3.13" >> /etc/resolv.conf.d
+
+#now sss could access loid-work.com & franky-work.com
+#and also the internet
+
+apt-get update
+apt-get upgrade
+apt-get install lynx -y
+
+#activate the proxy, makesure to run berlint.sh first
+export http_proxy="http://10.26.2.69:8080"
+export https_proxy="http://10.26.2.69:8080"
 ```
 - Periksa apakah proxy sudah berjalan di client server dengan command berikut  
 `` env | grep -i proxy``  
