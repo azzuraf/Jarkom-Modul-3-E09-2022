@@ -133,6 +133,24 @@ subnet 10.26.3.0 netmask 255.255.255.0 {
 
 ## Nomor 5
 Client mendapatkan DNS dari WISE dan client dapat terhubung dengan internet melalui DNS tersebut.
+- lakukan konfigurasi terhadap subnet yang dilalui Switch1 dan Switch3 dengan melakukan penetapan IP DNS Server yang terhubung sebagai berikut
+```bash
+subnet 10.26.1.0 netmask 255.255.255.0 {
+    ...
+    option domain-name-servers 10.8.2.2; 
+    ...
+}
+
+subnet 10.26.3.0 netmask 255.255.255.0 {
+    ...
+    option domain-name-servers 10.8.2.2; 
+    ...
+}
+
+subnet 10.26.2.0 netmask 255.255.255.0 {
+    ...
+}
+```
 - lakukan setup pada WISE dengan melakukan editing pada file /etc/bind/named.conf.options dan menambahkan isian sebagai berikut :
 ```bash
 options {
@@ -146,9 +164,65 @@ options {
         listen-on-v6 { any; };
 };
 ```
+- lalu restart bind9
+
 ## Nomor 7
 Loid dan Franky berencana menjadikan Eden sebagai server untuk pertukaran informasi dengan alamat IP yang tetap dengan IP [prefix IP].3.13 
-- 
+- Pertama, kita akan mendapatkan hwaddress pada node Eden dengan menggunakan command ip a dan akan didapatkan nilai 12:34:56:78:9a:bc pada link/ether
+
+- Setelah itu, dapat dibuat file temporary `/etc/dhcp/dhcpd.conf` dengan isi sebagai berikut
+
+```
+subnet 10.26.2.0 netmask 255.255.255.0 {
+    range 10.26.2.69 10.26.2.169; #Random range
+    option routers 10.26.2.1;
+    option broadcast-address 10.26.2.255;
+    option domain-name-servers 10.26.2.2;
+    default-lease-time 3600; #Random Lease Time
+    max-lease-time 7200;
+}
+
+subnet 10.26.1.0 netmask 255.255.255.0 {
+    range 10.26.1.50 10.26.1.88;
+    range 10.26.1.120 10.26.1.155;
+    option routers 10.26.1.1;
+    option broadcast-address 10.26.1.255;
+    option domain-name-servers 10.26.2.2;
+    default-lease-time 300;
+    max-lease-time 6900;
+}
+subnet 10.26.3.0 netmask 255.255.255.0 {
+    range 10.26.3.10 10.26.3.30;
+    range 10.26.3.60 10.26.3.85;
+    option routers 10.26.3.1;
+    option broadcast-address 10.26.3.255;
+    option domain-name-servers 10.26.2.2;
+    default-lease-time 600;
+    max-lease-time 6900;
+}
+
+host Eden {
+    hardware ethernet 12:34:56:78:9a:bc;
+    fixed-address 10.26.3.13;
+}
+
+host Berlint {
+    hardware ethernet 69:69:69:69:69:69;
+    fixed-address 10.26.2.69;
+}
+```
+
+kemudian, edit network configuration pada node Eden dengan menambahkan hwaddress 
+
+```
+host Eden {
+    hardware ethernet 12:34:56:78:9a:bc;
+    fixed-address 10.26.3.13;
+}
+```
+
+- Setelah dijalankan restart dengan perintah `service isc-dhcp-server restart`
+
 
 ## No 8 - 12(selesai)
 - Buat konfigurasi proxy server pada `berlint` dengan menggunakan `squid` yang telah terinstall.
