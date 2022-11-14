@@ -134,18 +134,22 @@ subnet 10.26.3.0 netmask 255.255.255.0 {
 ## No 8 - 12(selesai)
 - Buat konfigurasi proxy server pada `berlint` dengan menggunakan `squid` yang telah terinstall.
 ```bash
-# backup file dari /etc/squid/squid.conf ke /etc/squid/squid.conf.bak 
-mv /etc/squid/squid.conf /etc/squid/squid.conf.bak 
-
-# tambahkan konfigurasi berikut ke /etc/squid/squid.conf
-echo '
+echo "
 http_port 8080
 visible_hostname Berlint
-' > /etc/squid/squid.conf
-
-#restart dan check status dari squid apakan sudah dapat berjalan
+acl available_hour1 time MTWHF 08:00-17:00
+acl available_hour2 time AS 00:00-23:59
+acl loid-work dstdomain loid-work.com
+acl franky-work dstdomain franky-work.com
+http_access allow loid-work available_hour1
+http_access allow franky-work available_hour1
+http_access deny all
+" > /etc/squid/squid.conf
 service squid restart
-service squid status
+
+service squid restart
+
+echo "bash berlint.sh : done"
 ```
 - Jalankan proxy pada client server dalam hal ini adalah `SSS`  dengan command berkut:
 ```bash
