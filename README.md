@@ -168,7 +168,7 @@ options {
 
 ## Nomor 7
 Loid dan Franky berencana menjadikan Eden sebagai server untuk pertukaran informasi dengan alamat IP yang tetap dengan IP [prefix IP].3.13 
-- Pertama, kita akan mendapatkan hwaddress pada node Eden dengan menggunakan command ip a dan akan didapatkan nilai 12:34:56:78:9a:bc pada link/ether
+- Pertama, kita akan mendapatkan hwaddress pada node Eden dengan menggunakan command ip a dan akan didapatkan nilai `12:34:56:78:9a:bc` pada `link/ether`
 
 - Setelah itu, dapat dibuat file temporary `/etc/dhcp/dhcpd.conf` dengan isi sebagai berikut
 
